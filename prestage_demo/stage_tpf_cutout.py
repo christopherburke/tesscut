@@ -6,6 +6,8 @@ Created on Tue Feb 13 19:05:23 2018
 @author: Christopher J. Burke
 Demo a way to prestage ETE-6 FFIs into
 subarray data cubes for efficient retrieval of cut out TPF generation
+***This was run on a system with 125Gb of memory
+It may run out of memory on a system with less***
 """
 
 import numpy as np

@@ -3,9 +3,10 @@
 """
 Created on Tue Feb 13 19:05:23 2018
 
-@author: Christopher J. Burke
+@author: cjburke
 recall a TPF based on prestaged FFI cutouts.
-
+This version is for timing that fills
+a 200x200 array with random 5x5 subarrays.
 """
 
 import numpy as np
@@ -51,15 +52,31 @@ if __name__ == "__main__":
     yIds = int(math.floor(YSTRT/SUBSZ))
     yIde = int(math.floor((YSTRT+YWID)/SUBSZ))
     
-# Only demonstrate loading a single sub array too lazy to do the bookeeping to read in an arbitrary array based on the subarrays.    
     prefix = make_data_dirs(dirStaged, Sector, Camera, Detector)
-    filetmp = os.path.join(prefix, 'S{:2d}_C{:1d}_D{:1d}_{:04d}_{:04d}.npz'.format(Sector, Camera, Detector, xIds, yIds))
-    fin = np.load(filetmp)
-    dataCube = fin['cal']
-    shape = dataCube.shape
+    # preallocate tpf array
+    fullDataCube = np.zeros((200,200, 1348))
+    # Fill in the array with random subarrays
+    runX = 0
+    runY = 0
+    for xx in np.random.randint(20, 2000, size=(40,)):
+	for yy in np.random.randint(20, 2000, size=(40,)):
+            xIds = int(math.floor(xx/SUBSZ))
+            yIds = int(math.floor(yy/SUBSZ))
+
+	    #print(xx,yy)
+	    filetmp = os.path.join(prefix, 'S{:2d}_C{:1d}_D{:1d}_{:04d}_{:04d}.npz'.format(Sector, Camera, Detector, xIds, yIds))
+            fin = np.load(filetmp)
+            dataCube = fin['cal']
+            shape = dataCube.shape
+            #print(shape)
+            fullDataCube[runX:runX+SUBSZ, runY:runY+SUBSZ, :]=dataCube
+            runY = runY+SUBSZ
+        runX = runX+SUBSZ
+        runY = 0
 
     output_filename = 'temp_foo.fits'
     # Package data into fits file
+    # Add cumulative_array to primary fits image data
     # Make nearly empty primary data
     hdu = fits.PrimaryHDU([0.0])
     hdulist = fits.HDUList([hdu])
@@ -71,9 +88,7 @@ if __name__ == "__main__":
     prihdr.set('CCD',Detector)
     # Now add the data cube
 
-    # This doesn't quite seem to be in the same format as what TPF uses
-    #  TPF does use the second extension, but somehow the data cubes are sublists in the extension.
-    tbhdu = fits.ImageHDU(data=dataCube, name='calibrated', do_not_scale_image_data=True)
+    tbhdu = fits.ImageHDU(data=fullDataCube, name='calibrated', do_not_scale_image_data=True)
     hdulist.append(tbhdu)
 
     hdulist.writeto('testfoo.fits')
